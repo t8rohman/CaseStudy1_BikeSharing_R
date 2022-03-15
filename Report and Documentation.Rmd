@@ -1,0 +1,443 @@
+---
+title: "Case Study 1 _ How Does a Bike-Share Navigate Speedy Success?"
+author: "Taufiqur Rohman"
+date: '2022-03-11'
+output: html_document
+---
+
+## Introduction
+
+In this case study, I play the role of a junior data analyst on the marketing analyst team of Cyclistic, a Chicago-based bike-share firm. The director of marketing feels that increasing the number of yearly subscriptions is critical to the company's future success. As a result, my team is interested in seeing how casual riders and yearly members utilize Cyclistic bikes differently.
+
+My team will develop a new marketing plan based on these findings in order to convert casual riders into yearly members. However, Cyclistic executives must first approve your ideas, therefore your marketing plan must be supported by appealing data insights and effective data visualizations.
+
+*Notes: The packages and library used in this Rmd is not stated in the code chunk. Please install it before when the error message appears.*
+
+### About the company
+
+In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that are geotracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and returned to any other station in the system anytime.
+
+Until now, Cyclistic's marketing strategy relied on building general awareness and appealing to broad consumer segments. One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes, and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders. Customers who purchase annual memberships are Cyclistic members.
+
+Cyclistic's finance analysts have concluded that annual members are much more profitable than casual riders. Although the pricing flexibility helps Cyclistic attract more customers, Moreno believes that maximizing the number of annual members will be key to future growth. Rather than creating a marketing campaign that targets all-new customers, Moreno believes there is a very good chance to convert casual riders into members. She notes that casual riders are already aware of the Cyclistic program and have chosen Cyclistic for their mobility needs.
+
+Moreno has set a clear goal: Design marketing strategies aimed at converting casual riders into annual members. In order to do that, however, the marketing analyst team needs to better understand how annual members and casual riders differ, why casual riders would buy a membership, and how digital media could affect their marketing tactics. Moreno and her team are interested in analyzing the Cyclistic historical bike trip data to identify trends.
+
+-   **Problem Statement:** Annual members are more profitable than casual riders.
+-   **Solving:**
+    -   How do annual members and casual riders use Cyclistic bikes differently?
+    -   Why would casual riders buy Cyclistic annual memberships?
+    -   How can Cyclistic use digital media to influence casual riders to become members?
+-   **Goals:** Design marketing strategies aimed at converting casual riders into annual members
+-   **Deliverable:**
+    -   Documentation of any cleaning data
+    -   Summary of the analysis
+    -   Visualizations and key findings
+    -   Recommendations
+
+## Step 1: Importing data
+
+In the chunk below, I used these codes to import data from the last 12 months trip data in .csv format, merge it, and save it as a data frame called `df_trip`.
+
+The data can be downloaded here: <https://divvy-tripdata.s3.amazonaws.com/index.html>
+
+```{r importing dataset}
+df_trip <- list.files(pattern = "*.csv", full.names = TRUE) %>%
+  lapply(read_csv) %>%                                          
+  bind_rows                                                      
+  
+df_trip
+```
+
+## Step 2: Inspect & clean data
+
+First, I preview the data using the `head()` function by running the chunk below:
+
+```{r preview by head}
+head(df_trip)
+```
+
+Then, I checked the data type using `str()` as shown in the chunk below:
+
+```{r data type}
+str(df_trip)
+```
+
+For the last step of inspection, I am trying to find out what columns I have in my data frame by try running the the `colnames()` function in the code chunk below:
+
+```{r column names}
+colnames(df_trip)
+```
+
+I start by counting the occurrence of day of week and member or casual riders in the data.
+
+```{r counting occurence}
+count_dow <- table(df_trip$day_of_week)
+count_member <- table(df_trip$member_casual)
+
+count_dow
+count_member
+```
+
+Then, I calculate the ride length by subtracting ended time (ended_at) by started time (started_at).
+
+```{r ride length}
+df_trip <- df_trip %>% 
+  mutate(ride_length = ended_at - started_at) 
+
+head(df_trip)
+```
+
+After that, I try to find out the day of the week of the started time.
+
+```{r day of week starting bike}
+day_of_week <- weekdays(as.Date(df_trip$started_at))
+
+df_trip <- df_trip %>% 
+  add_column(day_of_week = day_of_week) 
+
+head(df_trip)
+```
+
+## Step 3: Analyzing Data and Visualization
+
+To start analyze data, I am trying to get the summary of the overall data to get the big picture of the data and to know whether there is is (an) errors in the data.
+
+```{r summary of data}
+summary(df_trip)
+```
+
+### Count of Occurence Analysis
+
+First, I examine the count of occurence of:
+
+\*\* Member or casual \*\* Day of week \*\* Grouped by member or casual and day of week \*\* Rideable type \*\* Grouped by member or casual and rideable type
+
+```{r count member}
+# Counting the member and casual
+count_member <- df_trip %>% 
+  group_by(member_casual) %>% 
+  summarise(count_member = n())
+
+count_member
+
+# Visualizing using bar chart
+ggplot(count_member) +
+  geom_bar(mapping = aes
+          (x = member_casual, y = count_member, fill = member_casual), 
+          stat = "identity")
+```
+
+```{r count day of week}
+# Counting the day of week
+count_dow <- df_trip %>% 
+  group_by(day_of_week) %>% 
+  summarise(count_dow = n())
+
+count_dow
+
+# Visualizing using bar chart
+ggplot(count_dow) +
+  geom_bar(mapping = aes
+          (x = day_of_week, y = count_dow, fill = day_of_week), 
+          stat = "identity")
+```
+
+```{r count the interaction}
+# Calculating the member and casual
+count_member_x_dow <- df_trip %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(count_member_x_dow = n())
+
+count_member_x_dow
+
+# Visualizing using bar chart
+ggplot(count_member_x_dow) +
+  geom_bar(mapping = aes
+          (x = day_of_week, y = count_member_x_dow, fill = day_of_week), 
+          stat = "identity") +
+  facet_wrap(~member_casual)
+```
+
+```{r count the rideable type}
+# Calculating the rideable type
+count_rideable <- df_trip %>% 
+  group_by(rideable_type) %>% 
+  summarise(count_rideable = n())
+
+count_rideable
+
+# Visualizing using bar chart
+ggplot(count_rideable) +
+  geom_bar(mapping = aes
+          (x = rideable_type, y = count_rideable, fill = rideable_type), 
+          stat = "identity")
+```
+
+```{r count the interaction 2}
+# Calculating the rideable type
+count_member_x_rideable <- df_trip %>% 
+  group_by(member_casual, rideable_type) %>% 
+  summarise(count_member_x_rideable = n())
+
+count_member_x_rideable
+
+# Visualizing using bar chart
+ggplot(count_member_x_rideable) +
+  geom_bar(mapping = aes
+          (x = rideable_type, y = count_member_x_rideable, fill = rideable_type), 
+          stat = "identity") +
+  facet_wrap(~member_casual)
+```
+
+### Mean Difference Analysis
+
+After counting the occurence, I examine the mean of ride length to know the difference behavior by calculating from these groups:
+
+\*\* Member or casual \*\* Day of week \*\* Interaction between day of week to member or casual \*\* Rideable type \*\* Interaction between rideable to member or casual
+
+```{r ride length by member }
+# Calculating the mean
+mean_rl_members <- df_trip %>% 
+  group_by(member_casual) %>% 
+  summarize(avg_rl = mean(ride_length))
+
+mean_rl_members
+
+# Visualizing using bar chart
+ggplot(mean_rl_members) +
+  geom_bar(mapping = aes
+          (x = member_casual, y = avg_rl, fill = member_casual), 
+          stat = "identity")
+```
+
+```{r ride length by day of week}
+# Calculating the mean
+mean_rl_dow <- df_trip %>% 
+  group_by(day_of_week) %>% 
+  summarize(avg_rl = mean(ride_length))
+
+mean_rl_dow
+
+# Visualizing using bar chart
+ggplot(mean_rl_dow) +
+  geom_bar(mapping = aes
+          (x = day_of_week, y = avg_rl, fill = day_of_week), 
+          stat = "identity")
+```
+
+```{r ride length by interaction}
+# Calculating the mean
+mean_rl_members_x_dow <- df_trip %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarize(avg_rl = mean(ride_length))
+
+mean_rl_members_x_dow
+
+# Visualizing the graphic
+ggplot(mean_rl_members_x_dow) +
+  geom_bar(mapping = aes
+           (x = day_of_week, y = avg_rl, fill = day_of_week),
+           stat = "identity") +
+  facet_wrap(~member_casual)
+```
+
+```{r ride length by rideable type}
+# Calculating the mean
+mean_rl_rideable <- df_trip %>% 
+  group_by(rideable_type) %>% 
+  summarize(avg_rl = mean(ride_length))
+
+# Visualizing using bar chart
+ggplot(mean_rl_rideable) +
+  geom_bar(mapping = aes
+          (x = rideable_type, y = avg_rl, fill = rideable_type), 
+          stat = "identity")
+```
+
+```{r ride length by interaction 2}
+# Calculating the mean
+mean_rl_member_x_rideable <- df_trip %>%
+  group_by(member_casual, rideable_type) %>% 
+  summarize(avg_rl = mean(ride_length))
+
+mean_rl_member_x_rideable
+
+# Visualizing the graphic
+ggplot(mean_rl_member_x_rideable) +
+  geom_bar(mapping = aes
+           (x = rideable_type, y = avg_rl, fill = rideable_type),
+           stat = "identity") +
+  facet_wrap(~member_casual)
+```
+
+From the result above, I found that majority of people are from casual, and not a member. Furthermore, most of member and casual rider took the ride on Saturday and Sunday. ***As I didn't get much from these analysis, I try to analyze other variables such as rideable type and its interaction to member type.*** UBAH!!
+
+I found that casual rider is more likely to use docked bike. While for the members, they prefer to use classic bike and electric bike rather than docked bike.
+
+### Extensive Statistical Analysis
+
+Next, I move to the extensive analysis using statistical model. There is two test that I try to conduct.
+
+The first one is to employ Two-way ANOVA to know the interaction between the member type and day of week to the average ride length. Then, I use the logistic regression to know the most significance variable that affect probability of people to be member. First, I look at the data visualization using box plot.
+
+```{r visualize box plot}
+num_rl <- as.double(df_trip$ride_length)
+
+# Ordering the day of week 
+df_trip$day_of_week <- factor(df_trip$day_of_week, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+# Plotting the box plot
+ggboxplot(df_trip, x = "day_of_week", y = "num_rl", color = "member_casual",
+          palette = c("#00AFBB", "#E7B800"))
+```
+
+Next, I calculate the interaction effect of member types and day of week.
+
+```{r two-way anova}
+res_anova <- aov(ride_length ~ member_casual + 
+                   day_of_week + member_casual:day_of_week, data = df_trip)
+summary(res_anova)
+```
+
+Looking from the result above, the significant omnibus interaction suggests that I should ignore the main effects and instead investigate the simple main effects for the independent variables.
+
+```{r simple main effect - anova}
+df_analysis <- df_trip %>% 
+  select(member_casual, day_of_week) %>% 
+  add_column(num_rl)
+
+# Creating subset data for day of week
+df_analysis_mon <- subset(df_analysis, day_of_week == "Monday")
+df_analysis_tue <- subset(df_analysis, day_of_week == "Tuesday")
+df_analysis_wed <- subset(df_analysis, day_of_week == "Wednesday")
+df_analysis_thu <- subset(df_analysis, day_of_week == "Thursday")
+df_analysis_fri <- subset(df_analysis, day_of_week == "Friday")
+df_analysis_sat <- subset(df_analysis, day_of_week == "Saturday")
+df_analysis_sun <- subset(df_analysis, day_of_week == "Sunday")
+
+# Run ANOVA on the day of week  subsets to investigate the impacts of member and casual type within each
+anova(lm(num_rl ~ member_casual, df_analysis_mon))
+anova(lm(num_rl ~ member_casual, df_analysis_tue))
+anova(lm(num_rl ~ member_casual, df_analysis_wed))
+anova(lm(num_rl ~ member_casual, df_analysis_thu))
+anova(lm(num_rl ~ member_casual, df_analysis_fri))
+anova(lm(num_rl ~ member_casual, df_analysis_sat))
+anova(lm(num_rl ~ member_casual, df_analysis_sun))
+```
+
+From the result above, we can conclude that the ride length is difference in every subset of member type and days of week.
+
+For the last analysis, I try to examine the largest variable that will affect people whether they will join the bicycle membership or not. For this analysis, I employ the logistic regression.
+
+```{r logistic regression}
+# Creating dummy variables
+df_logress <- df_trip %>% 
+  select(member_casual, day_of_week, rideable_type) %>% 
+  add_column(num_rl)
+
+df_logress <- dummy_cols(df_logress, select_columns = c('member_casual', 'day_of_week', 'rideable_type'), remove_selected_columns = TRUE)
+
+# Modeling the logistic regression
+# Use the member member/casual and day_of_week/Monday variable as the baseline 
+set.seed(123)
+training.samples <- df_logress %>% 
+  createDataPartition(p = 0.8, list = FALSE)
+train_reg  <- df_logress[training.samples, ]
+test_reg <- df_logress[-training.samples, ]
+
+logistic_model <- glm(member_casual_member ~ day_of_week_Tuesday + 
+                        day_of_week_Wednesday + day_of_week_Thursday +
+                        day_of_week_Friday + day_of_week_Saturday + 
+                        day_of_week_Sunday + rideable_type_docked_bike + 
+                        rideable_type_classic_bike + num_rl, 
+                      data = train_reg, family = "binomial")
+summary(logistic_model)
+
+predict_reg <- predict(logistic_model, test_reg, type = "response")
+
+# Changing probabilities
+predict_reg <- ifelse(predict_reg >0.5, 1, 0)
+```
+
+Not forget, the model is evaluated using confusion matrix and ROC-AUC curve.
+
+```{r accuracy of the model}
+# Evaluating model accuracy
+# using confusion matrix
+table(test_reg$member_casual_member, predict_reg)
+   
+missing_classerr <- mean(predict_reg != test_reg$member_casual_member)
+print(paste('Accuracy =', 1 - missing_classerr))
+   
+# ROC-AUC Curve
+ROCPred <- prediction(predict_reg, test_reg$member_casual_member) 
+ROCPer <- performance(ROCPred, measure = "tpr", 
+                             x.measure = "fpr")
+   
+auc <- performance(ROCPred, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
+   
+# Plotting curve
+plot(ROCPer)
+plot(ROCPer, colorize = TRUE, 
+     print.cutoffs.at = seq(0.1, by = 0.1), 
+     main = "ROC CURVE")
+abline(a = 0, b = 1)
+   
+auc <- round(auc, 4)
+legend(.6, .4, auc, title = "AUC", cex = 1)
+```
+
+From the logistic regression result, I get the result as follow:
+
+**y = 20.0428 - 0.130wed + 0.128thu - 19.528sat + 0.139sun - 0.001num_rl**
+
+Where y = probability of the person being a member or casual rider only. To interpret the number, member = 1 and casual = 0.
+
+Even though, it should be noted that the accuracy of the model is not very high, where **Accuracy = 0.581**.
+
+## Interpretation and Recommendation
+
+From all of the analysis I have conducted, I put all of the findings and insights here to interpret the analysis result and make it easier to give recommendations:
+
+1.  While most of rider are members, casual riders ride longer in average than the members *(refer to chunk 9 and 14)*.
+2.  Most of the people use the service on the weekend. The average ride length is also higher on the weekend compared to weekdays *(refer to chunk 10 and 15)*.
+3.  Most of casual riders use the service on the weekend. While members seems more distributed evenly on every day, members tend to use the service during weekdays. For the average ride length, casual and members ride longer during weekend *(refer to chunk 11 and 16)*.
+4.  Most of casual riders and members use the classic bike. Rarely they use docked bike. But if we take a look at the average ride length, casual riders ride much longer in docked bike compared to the members *(refer to chunk 12, 13, 17, and 18)*.
+5.  Most of the people use the service on the weekend. The average ride length is also higher on the weekend compared to weekdays *(refer to chunk 10 and 15)*.
+6.  Most of casual riders use the service on the weekend. While members seems more distributed evenly on every day, members tend to use the service during weekdays. For the average ride length, casual and members ride longer during weekend (refer to chunk 11 and 16).
+7.  Most of casual riders and members use the classic bike. Rarely they use docked bike. But if we take a look at the average ride length, casual riders ride much longer in docked bike compared to the members *(refer to chunk 12, 13, 17, and 18)*.
+8.  Riding on Saturday is the biggest predictor for the casual riders.
+9.  Even though the effect is small, riding on Wednesday or riding longer is also the predictor for the casual riders. On the other hand, riding on Thursday or Sunday are the predictor for the members.
+
+### Main Interpretation
+
+So, what does the data tell us? I believe that the majority of casual riders simply use the services for recreational purposes on weekends. It is demonstrated by the fact that the majority of casual riders use the service on weekends, whereas it is dispersed evenly among members. Furthermore, despite the fact that just a few people use docked bikes, the average trip length for casual users is significantly longer than for members.
+
+On the other hand, I suppose that the majority of members use the service to get to work. The fact that the majority of them use the service on weekdays demonstrates this. Members also ride for a shorter period of time than casual riders.
+
+### Recommendation
+
+Moving to the first question, what are the best marketing strategies to convert casual riders into annual members?
+
+-   First, the company can start on converting remaining casual weekdays riders to members by:
+    -   Create a compelling membership package for workers and students.
+    -   Communicate in the ads that being the member for commuting to work or school is cheaper than rent it for hours.
+    -   Focusing this type of ads to people that commute to work by non-motor vehicle, such as bus, train, and bicycle.
+-   Then, company can begin on converting current and new weekend casual riders to members. It can be done through:
+    -   Create a compelling membership package for weekend only / leisure
+    -   For the alternative, the company can create a bundled rental package for holiday.
+    -   Communicate that membership is cheaper than rent it casually for hours.
+    -   Focusing this type of ads to traveler to the area.
+
+### Limitation
+
+This study places much too much emphasis on simple comparisons between mean groups. The approach cannot be scientifically proven since it lacks reliable calculations and equations.
+
+Despite the fact that I utilized a statistical model in this study, the logistic regression model I used was not particularly reliable. It only has a 57 percent accuracy, which is insufficient to be considered as an accurate model. Several variables were also left out, because of the singularity problem. The model, on the other hand, can provide us a rapid insight into the most important element that influences the likelihood of individuals becoming members.
+
+In terms of business development, I believe that this data alone is insufficient to compel the most effective marketing techniques. I'm unable to modify pricing since there is no external information, such as rivals or the environment, that can be assessed using SWOT or PESTEL. Instead of best marketing strategies as a whole, I believe this should be designated as promotion strategies.
+
+If similar study is undertaken again in the future, instead of focusing on comparing mean groups, we may concentrate on developing an accurate model to forecast the likelihood of a customer becoming a member. We may conclude from the model which variable has the greatest effect on the probability.
